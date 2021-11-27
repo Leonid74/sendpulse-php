@@ -4,14 +4,14 @@ A simple SendPulse REST client library and example for PHP.
 
 API Documentation [https://sendpulse.com/api](https://sendpulse.com/api)
 
-modified by [Leonid74](https://github.com/Leonid74/sendpulse-rest-api-php) (forked from [sendpulse/sendpulse-rest-api-php](https://github.com/sendpulse/sendpulse-rest-api-php))
+modified by [Leonid74](https://github.com/Leonid74/sendpulse-php) (forked from [sendpulse/sendpulse-rest-api-php](https://github.com/sendpulse/sendpulse-rest-api-php))
 
 ### Installing
 
 Via Composer:
 
 ```bash
-composer require Leonid74/sendpulse-rest-api-php
+composer require Leonid74/sendpulse-php
 ```
 
 ### Usage
@@ -21,13 +21,13 @@ composer require Leonid74/sendpulse-rest-api-php
 require 'vendor/autoload.php';
 
 // Without Composer (and instead of "require 'vendor/autoload.php'"):
-// require("your-path/sendpulse-rest-api-php/src/ApiInterface.php");
-// require("your-path/sendpulse-rest-api-php/src/ApiClient.php");
-// require("your-path/sendpulse-rest-api-php/src/Storage/TokenStorageInterface.php");
-// require("your-path/sendpulse-rest-api-php/src/Storage/FileStorage.php");
-// require("your-path/sendpulse-rest-api-php/src/Storage/SessionStorage.php");
-// require("your-path/sendpulse-rest-api-php/src/Storage/MemcachedStorage.php");
-// require("your-path/sendpulse-rest-api-php/src/Storage/MemcacheStorage.php");
+// require("your-path/sendpulse-php/src/ApiInterface.php");
+// require("your-path/sendpulse-php/src/ApiClient.php");
+// require("your-path/sendpulse-php/src/Storage/TokenStorageInterface.php");
+// require("your-path/sendpulse-php/src/Storage/FileStorage.php");
+// require("your-path/sendpulse-php/src/Storage/SessionStorage.php");
+// require("your-path/sendpulse-php/src/Storage/MemcachedStorage.php");
+// require("your-path/sendpulse-php/src/Storage/MemcacheStorage.php");
 
 use Leonid74\Sendpulse\ApiClient;
 use Leonid74\Sendpulse\Storage\FileStorage;
