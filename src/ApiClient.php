@@ -1,24 +1,24 @@
 <?php
 
-/*
+/**
  * SendPulse REST API Client
  *
  * Documentation
  * https://login.sendpulse.com/manual/rest-api/
  * https://sendpulse.com/api
  *
+ * @author modified by Leonid74 (forked from https://github.com/sendpulse/sendpulse-rest-api-php)
  */
 
-namespace Sendpulse\RestApi;
+namespace Leonid74\Sendpulse;
 
 use Exception;
-use Sendpulse\RestApi\Storage\FileStorage;
-use Sendpulse\RestApi\Storage\TokenStorageInterface;
+use Leonid74\Sendpulse\Storage\FileStorage;
+use Leonid74\Sendpulse\Storage\TokenStorageInterface;
 use stdClass;
 
 class ApiClient implements ApiInterface
 {
-
     private $apiUrl = 'https://api.sendpulse.com';
 
     private $userId;

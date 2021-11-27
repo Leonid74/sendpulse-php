@@ -1,19 +1,19 @@
 <?php
 
-/*
+/**
  * SendPulse REST API Interface
  *
  * Documentation
  * https://login.sendpulse.com/manual/rest-api/
  * https://sendpulse.com/api
  *
+ * @author modified by Leonid74 (forked from https://github.com/sendpulse/sendpulse-rest-api-php)
  */
 
-namespace Sendpulse\RestApi;
+namespace Leonid74\Sendpulse;
 
 interface ApiInterface
 {
-
     /**
      * Create new address book
      *

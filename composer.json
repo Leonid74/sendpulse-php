@@ -1,6 +1,6 @@
 {
-  "name": "sendpulse/rest-api",
-  "description": "Sendpulse REST API client library",
+  "name": "leonid74/sendpulse-rest-api-php",
+  "description": "Sendpulse REST API client library (modified)",
   "keywords": [
     "sendpulse",
     "rest",
@@ -15,6 +15,11 @@
     {
       "name": "Alexey Moroz",
       "email": "a.moroz@sendpulse.com"
+    },
+    {
+        "name": "leonid74",
+        "homepage": "https://github.com/leonid74/",
+        "role": "Developer"
     }
   ],
   "require": {
@@ -22,7 +27,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Sendpulse\\RestApi\\": "src/"
+      "Leonid74\\Sendpulse\\": "src/"
     }
   }
 }

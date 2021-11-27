@@ -5,7 +5,7 @@
  * Class Session
  */
 
-namespace Sendpulse\RestApi\Storage;
+namespace Leonid74\Sendpulse\Storage;
 
 use Memcache;
 

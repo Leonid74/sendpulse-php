@@ -5,7 +5,7 @@
  * Class File
  */
 
-namespace Sendpulse\RestApi\Storage;
+namespace Leonid74\Sendpulse\Storage;
 
 class FileStorage implements TokenStorageInterface
 {
@@ -52,13 +52,13 @@ class FileStorage implements TokenStorageInterface
 
         return null;
     }
-    
+
     /**
      * @param  $key string
-     * 
+     *
      * @return bool
      */
-    public function delete($key) 
+    public function delete($key)
     {
         $filePath = $this->storageFolder . $key;
         if (file_exists($filePath)) {

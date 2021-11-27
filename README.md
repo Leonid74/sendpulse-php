@@ -4,12 +4,14 @@ A simple SendPulse REST client library and example for PHP.
 
 API Documentation [https://sendpulse.com/api](https://sendpulse.com/api)
 
+modified by [Leonid74](https://github.com/Leonid74/sendpulse-rest-api-php) (forked from [sendpulse/sendpulse-rest-api-php](https://github.com/sendpulse/sendpulse-rest-api-php))
+
 ### Installing
 
 Via Composer:
 
 ```bash
-composer require sendpulse/rest-api
+composer require Leonid74/sendpulse-rest-api-php
 ```
 
 ### Usage
@@ -27,8 +29,8 @@ require 'vendor/autoload.php';
 // require("your-path/sendpulse-rest-api-php/src/Storage/MemcachedStorage.php");
 // require("your-path/sendpulse-rest-api-php/src/Storage/MemcacheStorage.php");
 
-use Sendpulse\RestApi\ApiClient;
-use Sendpulse\RestApi\Storage\FileStorage;
+use Leonid74\Sendpulse\ApiClient;
+use Leonid74\Sendpulse\Storage\FileStorage;
 
 // API credentials from https://login.sendpulse.com/settings/#api
 define('API_USER_ID', '');
@@ -113,30 +115,4 @@ $additionalParams = array(
     'filter' => '{"variable_name":"some","operator":"or","conditions":[{"condition":"likewith","value":"a"},{"condition":"notequal","value":"b"}]}',
 );
 var_dump($SPApiClient->createPushTask($task, $additionalParams));
-```
-
-### Usage Automation360
-
-```php
-<?php
-
-require 'vendor/autoload.php';
-
-use Sendpulse\RestApi\Automation360;
-
-// https://login.sendpulse.com/emailservice/events/
-$eventHash = 'EVENT_HASH';
-$email = 'email@domain.com';
-$phone = '380931112233';
-$variables = [
-    'user_id' => 123123,
-    'event_date' => date('Y-m-d'),
-    'firstname' => 'Name',
-    'lastname' => 'Family',
-    'age' => 23
-];
-$automationClient =  new Automation360($eventHash);
-$result = $automationClient->sendEventToSendpulse($email, $phone, $variables);
-
-var_dump($result);
 ```
