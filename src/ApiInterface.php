@@ -19,7 +19,7 @@ interface ApiInterface
      *
      * @param $bookName
      */
-    public function createAddressBook($bookName);
+    public function createAddressBook( $bookName );
 
     /**
      * Edit address book name
@@ -27,14 +27,14 @@ interface ApiInterface
      * @param $id
      * @param $newName
      */
-    public function editAddressBook($id, $newName);
+    public function editAddressBook( $id, $newName );
 
     /**
      * Remove address book
      *
      * @param $id
      */
-    public function removeAddressBook($id);
+    public function removeAddressBook( $id );
 
     /**
      * Get list of address books
@@ -42,14 +42,14 @@ interface ApiInterface
      * @param $limit
      * @param $offset
      */
-    public function listAddressBooks($limit = null, $offset = null);
+    public function listAddressBooks( $limit = null, $offset = null );
 
     /**
      * Get book info
      *
      * @param $id
      */
-    public function getBookInfo($id);
+    public function getBookInfo( $id );
 
     /**
      * Get book variables.
@@ -57,7 +57,7 @@ interface ApiInterface
      * @param $id
      *   Address book id.
      */
-    public function getBookVariables($id);
+    public function getBookVariables( $id );
 
     /**
      * Get list email addresses from book
@@ -66,14 +66,14 @@ interface ApiInterface
      * @param $limit
      * @param $offset
      */
-    public function getEmailsFromBook($id, $limit = null, $offset = null);
+    public function getEmailsFromBook( $id, $limit = null, $offset = null );
 
     /**
      * Get amount of subscriptions for the book
      *
      * @param $bookID
      */
-    public function bookCountSubscriptions($bookID);
+    public function bookCountSubscriptions( $bookID );
 
     /**
      * Add new emails to book
@@ -81,7 +81,7 @@ interface ApiInterface
      * @param $bookID
      * @param $emails
      */
-    public function addEmails($bookID, $emails);
+    public function addEmails( $bookID, $emails );
 
     /**
      * Remove emails from book
@@ -89,7 +89,7 @@ interface ApiInterface
      * @param $bookID
      * @param $emails
      */
-    public function removeEmails($bookID, $emails);
+    public function removeEmails( $bookID, $emails );
 
     /**
      * Unsubscribe email addresses from book
@@ -97,7 +97,7 @@ interface ApiInterface
      * @param $bookID
      * @param $emails
      */
-    public function unsubscribeEmails($bookID, $emails);
+    public function unsubscribeEmails( $bookID, $emails );
 
     /**
      * Get information about email from book
@@ -105,14 +105,14 @@ interface ApiInterface
      * @param $bookID
      * @param $email
      */
-    public function getEmailInfo($bookID, $email);
+    public function getEmailInfo( $bookID, $email );
 
     /**
      * Calculate cost of the campaign based on address book
      *
      * @param $bookID
      */
-    public function campaignCost($bookID);
+    public function campaignCost( $bookID );
 
     /**
      * Get list of campaigns
@@ -120,28 +120,28 @@ interface ApiInterface
      * @param $limit
      * @param $offset
      */
-    public function listCampaigns($limit = null, $offset = null);
+    public function listCampaigns( $limit = null, $offset = null );
 
     /**
      * Get information about campaign
      *
      * @param $id
      */
-    public function getCampaignInfo($id);
+    public function getCampaignInfo( $id );
 
     /**
      * Get campaign statistic by countries
      *
      * @param $id
      */
-    public function campaignStatByCountries($id);
+    public function campaignStatByCountries( $id );
 
     /**
      * Get campaign statistic by referrals
      *
      * @param $id
      */
-    public function campaignStatByReferrals($id);
+    public function campaignStatByReferrals( $id );
 
     /**
      * Create new campaign
@@ -171,7 +171,7 @@ interface ApiInterface
      *
      * @param $id
      */
-    public function cancelCampaign($id);
+    public function cancelCampaign( $id );
 
     /**
      * Get list of allowed senders
@@ -184,14 +184,14 @@ interface ApiInterface
      * @param $senderName
      * @param $senderEmail
      */
-    public function addSender($senderName, $senderEmail);
+    public function addSender( $senderName, $senderEmail );
 
     /**
      * Remove sender
      *
      * @param $email
      */
-    public function removeSender($email);
+    public function removeSender( $email );
 
     /**
      * Activate sender using code from mail
@@ -199,35 +199,35 @@ interface ApiInterface
      * @param $email
      * @param $code
      */
-    public function activateSender($email, $code);
+    public function activateSender( $email, $code );
 
     /**
      * Send mail with activation code on sender email
      *
      * @param $email
      */
-    public function getSenderActivationMail($email);
+    public function getSenderActivationMail( $email );
 
     /**
      * Get global information about email
      *
      * @param $email
      */
-    public function getEmailGlobalInfo($email);
+    public function getEmailGlobalInfo( $email );
 
     /**
      * Remove email address from all books
      *
      * @param $email
      */
-    public function removeEmailFromAllBooks($email);
+    public function removeEmailFromAllBooks( $email );
 
     /**
      * Get statistic for email by all campaigns
      *
      * @param $email
      */
-    public function emailStatByCampaigns($email);
+    public function emailStatByCampaigns( $email );
 
     /**
      * Show emails from blacklist
@@ -240,21 +240,21 @@ interface ApiInterface
      * @param      $emails
      * @param null $comment
      */
-    public function addToBlackList($emails, $comment = null);
+    public function addToBlackList( $emails, $comment = null );
 
     /**
      * Remove email address from blacklist
      *
      * @param $emails
      */
-    public function removeFromBlackList($emails);
+    public function removeFromBlackList( $emails );
 
     /**
      * Return user balance
      *
      * @param string $currency
      */
-    public function getBalance($currency = '');
+    public function getBalance( $currency = '' );
 
     /**
      * Get list of emails that was sent by SMTP
@@ -282,7 +282,7 @@ interface ApiInterface
      *
      * @param $id
      */
-    public function smtpGetEmailInfoById($id);
+    public function smtpGetEmailInfoById( $id );
 
     /**
      * SMTP: get list of unsubscribed emails
@@ -290,21 +290,21 @@ interface ApiInterface
      * @param null $limit
      * @param null $offset
      */
-    public function smtpListUnsubscribed($limit = null, $offset = null);
+    public function smtpListUnsubscribed( $limit = null, $offset = null );
 
     /**
      * Unsubscribe emails using SMTP
      *
      * @param $emails
      */
-    public function smtpUnsubscribeEmails($emails);
+    public function smtpUnsubscribeEmails( $emails );
 
     /**
      * Remove emails from unsubscribe list using SMTP
      *
      * @param $emails
      */
-    public function smtpRemoveFromUnsubscribe($emails);
+    public function smtpRemoveFromUnsubscribe( $emails );
 
     /**
      * Get list of allowed IPs using SMTP
@@ -321,21 +321,21 @@ interface ApiInterface
      *
      * @param $email
      */
-    public function smtpAddDomain($email);
+    public function smtpAddDomain( $email );
 
     /**
      * Send confirm mail to verify new domain
      *
      * @param $email
      */
-    public function smtpVerifyDomain($email);
+    public function smtpVerifyDomain( $email );
 
     /**
      * Send mail using SMTP
      *
      * @param $email
      */
-    public function smtpSendMail($email);
+    public function smtpSendMail( $email );
 
     /**
      * Get list of all push campaigns
@@ -343,7 +343,7 @@ interface ApiInterface
      * @param null $limit
      * @param null $offset
      */
-    public function pushListCampaigns($limit = null, $offset = null);
+    public function pushListCampaigns( $limit = null, $offset = null );
 
     /**
      * Get list of websites
@@ -351,7 +351,7 @@ interface ApiInterface
      * @param null $limit
      * @param null $offset
      */
-    public function pushListWebsites($limit = null, $offset = null);
+    public function pushListWebsites( $limit = null, $offset = null );
 
     /**
      * Get amount of websites
@@ -363,7 +363,7 @@ interface ApiInterface
      *
      * @param $websiteID
      */
-    public function pushListWebsiteVariables($websiteID);
+    public function pushListWebsiteVariables( $websiteID );
 
     /**
      * Get list of all subscriptions for the website
@@ -374,14 +374,14 @@ interface ApiInterface
      *
      * @return
      */
-    public function pushListWebsiteSubscriptions($websiteID, $limit = null, $offset = null);
+    public function pushListWebsiteSubscriptions( $websiteID, $limit = null, $offset = null );
 
     /**
      * Get amount of subscriptions for the site
      *
      * @param $websiteID
      */
-    public function pushCountWebsiteSubscriptions($websiteID);
+    public function pushCountWebsiteSubscriptions( $websiteID );
 
     /**
      * Set state for subscription
@@ -389,7 +389,7 @@ interface ApiInterface
      * @param $subscriptionID
      * @param $stateValue
      */
-    public function pushSetSubscriptionState($subscriptionID, $stateValue);
+    public function pushSetSubscriptionState( $subscriptionID, $stateValue );
 
     /**
      * Create new push campaign
@@ -397,14 +397,14 @@ interface ApiInterface
      * @param       $taskInfo
      * @param array $additionalParams
      */
-    public function createPushTask($taskInfo, array $additionalParams = array());
+    public function createPushTask( $taskInfo, array $additionalParams = [] );
 
     /**
      * Get integration code for Push Notifications.
      *
      * @param $websiteID
      */
-    public function getPushIntegrationCode($websiteID);
+    public function getPushIntegrationCode( $websiteID );
 
     /**
      * @Author Maksym Dzhym m.jim@sendpulse.com
@@ -412,7 +412,7 @@ interface ApiInterface
      * @param array $variables
      * @return \stdClass
      */
-    public function startEventAutomation360($eventName, array $variables);
+    public function startEventAutomation360( $eventName, array $variables );
 
     /**
      * Add phones to addressbook
@@ -421,7 +421,7 @@ interface ApiInterface
      * @param array $phones
      * @return mixed
      */
-    public function addPhones($bookID, array $phones);
+    public function addPhones( $bookID, array $phones );
 
     /**
      * Add phones with variables to addressbook
@@ -430,8 +430,7 @@ interface ApiInterface
      * @param array $phones
      * @return mixed
      */
-    public function addPhonesWithVariables($bookID, array $phones);
-
+    public function addPhonesWithVariables( $bookID, array $phones );
 
     /**
      * Update phone variables
@@ -441,7 +440,7 @@ interface ApiInterface
      * @param $variables
      * @return mixed
      */
-    public function updatePhoneVaribales($bookID, array $phones, array $variables);
+    public function updatePhoneVaribales( $bookID, array $phones, array $variables );
 
     /**
      * Delete phones from book
@@ -450,7 +449,7 @@ interface ApiInterface
      * @param array $phones
      * @return mixed
      */
-    public function deletePhones($bookID, array $phones);
+    public function deletePhones( $bookID, array $phones );
 
     /**
      * Get information about phone
@@ -459,7 +458,7 @@ interface ApiInterface
      * @param $phoneNumber
      * @return mixed
      */
-    public function getPhoneInfo($bookID, $phoneNumber);
+    public function getPhoneInfo( $bookID, $phoneNumber );
 
     /**
      * Add phones to blacklist
@@ -468,7 +467,7 @@ interface ApiInterface
      * @param array $phones
      * @return mixed
      */
-    public function addPhonesToBlacklist(array $phones);
+    public function addPhonesToBlacklist( array $phones );
 
     /**
      * Remove phones from blacklist
@@ -476,7 +475,7 @@ interface ApiInterface
      * @param array $phones
      * @return mixed
      */
-    public function removePhonesFromBlacklist(array $phones);
+    public function removePhonesFromBlacklist( array $phones );
 
     /**
      * Get list of phones from blacklist
@@ -493,7 +492,7 @@ interface ApiInterface
      * @param array $additionalParams
      * @return mixed
      */
-    public function sendSmsByBook($bookId, array $params, array $additionalParams);
+    public function sendSmsByBook( $bookId, array $params, array $additionalParams );
 
     /**
      * Create sms campaign based on list
@@ -503,7 +502,7 @@ interface ApiInterface
      * @param array $additionalParams
      * @return mixed
      */
-    public function sendSmsByList(array $phones, array $params, array $additionalParams);
+    public function sendSmsByList( array $phones, array $params, array $additionalParams );
 
     /**
      * List sms campaigns
@@ -511,7 +510,7 @@ interface ApiInterface
      * @param $params
      * @return mixed
      */
-    public function listSmsCampaigns(array $params);
+    public function listSmsCampaigns( array $params );
 
     /**
      * get info about SMS campaign
@@ -519,7 +518,7 @@ interface ApiInterface
      * @param $campaignID
      * @return mixed
      */
-    public function getSmsCampaignInfo($campaignID);
+    public function getSmsCampaignInfo( $campaignID );
 
     /**
      * Cancel SMS campaign
@@ -527,7 +526,7 @@ interface ApiInterface
      * @param $campaignID
      * @return mixed
      */
-    public function cancelSmsCampaign($campaignID);
+    public function cancelSmsCampaign( $campaignID );
 
     /**
      * Get SMS campaign cost based on book or simple list
@@ -536,7 +535,7 @@ interface ApiInterface
      * @param $additionalParams
      * @return mixed
      */
-    public function getSmsCampaignCost(array $params, array $additionalParams);
+    public function getSmsCampaignCost( array $params, array $additionalParams );
 
     /**
      * Delete SMS campaign
@@ -544,6 +543,5 @@ interface ApiInterface
      * @param $campaignID
      * @return mixed
      */
-    public function deleteSmsCampaign($campaignID);
-
+    public function deleteSmsCampaign( $campaignID );
 }

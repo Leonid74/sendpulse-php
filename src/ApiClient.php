@@ -33,35 +33,36 @@ class ApiClient implements ApiInterface
      */
     private $tokenStorage;
 
-
     /**
      * Sendpulse API constructor
      *
-     * @param                       $userId
-     * @param                       $secret
+     * @param $userId
+     * @param $secret
      * @param TokenStorageInterface $tokenStorage
      *
      * @throws Exception
      */
-    public function __construct($userId, $secret, TokenStorageInterface $tokenStorage = null)
+    public function __construct( $userId, $secret, TokenStorageInterface $tokenStorage = null )
     {
-        if ($tokenStorage === null) {
+        if ( $tokenStorage === null ) {
             $tokenStorage = new FileStorage();
         }
-        if (empty($userId) || empty($secret)) {
-            throw new Exception('Empty ID or SECRET');
+        if ( empty( $userId ) || empty( $secret ) ) {
+            throw new Exception( 'Empty ID or SECRET' );
         }
 
         $this->userId = $userId;
         $this->secret = $secret;
         $this->tokenStorage = $tokenStorage;
-        $hashName = md5($userId . '::' . $secret);
+        $hashName = md5( $userId . '::' . $secret );
 
-        /** load token from storage */
-        $this->token = $this->tokenStorage->get($hashName);
+        /**
+         * load token from storage
+         */
+        $this->token = $this->tokenStorage->get( $hashName );
 
-        if (empty($this->token) && !$this->getToken()) {
-            throw new Exception('Could not connect to api, check your ID and SECRET');
+        if ( empty( $this->token ) && !$this->getToken() ) {
+            throw new Exception( 'Could not connect to api, check your ID and SECRET' );
         }
     }
 
@@ -72,24 +73,26 @@ class ApiClient implements ApiInterface
      */
     private function getToken()
     {
-        $data = array(
+        $data = [
             'grant_type' => 'client_credentials',
             'client_id' => $this->userId,
             'client_secret' => $this->secret,
-        );
+        ];
 
-        $requestResult = $this->sendRequest('oauth/access_token', 'POST', $data, false);
+        $requestResult = $this->sendRequest( 'oauth/access_token', 'POST', $data, false );
 
-        if ($requestResult->http_code !== 200) {
+        if ( $requestResult->http_code !== 200 ) {
             return false;
         }
 
         $this->refreshToken = 0;
         $this->token = $requestResult->data->access_token;
 
-        $hashName = md5($this->userId . '::' . $this->secret);
-        /** Save token to storage */
-        $this->tokenStorage->set($hashName, $this->token);
+        $hashName = md5( $this->userId . '::' . $this->secret );
+        /**
+         * Save token to storage
+         */
+        $this->tokenStorage->set( $hashName, $this->token );
 
         return true;
     }
@@ -97,74 +100,74 @@ class ApiClient implements ApiInterface
     /**
      * Form and send request to API service
      *
-     * @param        $path
+     * @param $path
      * @param string $method
-     * @param array $data
-     * @param bool $useToken
+     * @param array  $data
+     * @param bool   $useToken
      *
      * @return stdClass
      */
-    protected function sendRequest($path, $method = 'GET', $data = array(), $useToken = true)
+    protected function sendRequest( $path, $method = 'GET', $data = [], $useToken = true )
     {
         $url = $this->apiUrl . '/' . $path;
-        $method = strtoupper($method);
+        $method = strtoupper( $method );
         $curl = curl_init();
 
-        if ($useToken && !empty($this->token)) {
-            $headers = array('Authorization: Bearer ' . $this->token, 'Expect:');
-            curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        if ( $useToken && !empty( $this->token ) ) {
+            $headers = [ 'Authorization: Bearer ' . $this->token, 'Expect:' ];
+            curl_setopt( $curl, CURLOPT_HTTPHEADER, $headers );
         }
 
-        switch ($method) {
+        switch ( $method ) {
             case 'POST':
-                curl_setopt($curl, CURLOPT_POST, count($data));
-                curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($data));
+                curl_setopt( $curl, CURLOPT_POST, count( $data ) );
+                curl_setopt( $curl, CURLOPT_POSTFIELDS, http_build_query( $data ) );
                 break;
             case 'PUT':
-                curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'PUT');
-                curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($data));
+                curl_setopt( $curl, CURLOPT_CUSTOMREQUEST, 'PUT' );
+                curl_setopt( $curl, CURLOPT_POSTFIELDS, http_build_query( $data ) );
                 break;
             case 'DELETE':
-                curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
-                curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($data));
+                curl_setopt( $curl, CURLOPT_CUSTOMREQUEST, 'DELETE' );
+                curl_setopt( $curl, CURLOPT_POSTFIELDS, http_build_query( $data ) );
                 break;
             default:
-                if (!empty($data)) {
-                    $url .= '?' . http_build_query($data);
+                if ( !empty( $data ) ) {
+                    $url .= '?' . http_build_query( $data );
                 }
         }
 
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_HEADER, true);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 300);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 300);
+        curl_setopt( $curl, CURLOPT_URL, $url );
+        curl_setopt( $curl, CURLOPT_SSL_VERIFYPEER, false );
+        curl_setopt( $curl, CURLOPT_SSL_VERIFYHOST, false );
+        curl_setopt( $curl, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $curl, CURLOPT_HEADER, true );
+        curl_setopt( $curl, CURLOPT_CONNECTTIMEOUT, 300 );
+        curl_setopt( $curl, CURLOPT_TIMEOUT, 300 );
 
-        $response = curl_exec($curl);
-        $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
-        $headerCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        $responseBody = substr($response, $header_size);
-        $responseHeaders = substr($response, 0, $header_size);
-        $ip = curl_getinfo($curl, CURLINFO_PRIMARY_IP);
-        $curlErrors = curl_error($curl);
+        $response = curl_exec( $curl );
+        $header_size = curl_getinfo( $curl, CURLINFO_HEADER_SIZE );
+        $headerCode = curl_getinfo( $curl, CURLINFO_HTTP_CODE );
+        $responseBody = substr( $response, $header_size );
+        $responseHeaders = substr( $response, 0, $header_size );
+        $ip = curl_getinfo( $curl, CURLINFO_PRIMARY_IP );
+        $curlErrors = curl_error( $curl );
 
-        curl_close($curl);
+        curl_close( $curl );
 
-        if ($headerCode === 401 && $this->refreshToken === 0) {
+        if ( $headerCode === 401 && $this->refreshToken === 0 ) {
             ++$this->refreshToken;
             $this->getToken();
-            $retval = $this->sendRequest($path, $method, $data);
+            $retval = $this->sendRequest( $path, $method, $data );
         } else {
             $retval = new stdClass();
-            $retval->data = json_decode($responseBody);
+            $retval->data = json_decode( $responseBody );
             $retval->http_code = $headerCode;
             $retval->headers = $responseHeaders;
             $retval->ip = $ip;
             $retval->curlErrors = $curlErrors;
             $retval->method = $method . ':' . $url;
-            $retval->timestamp = date('Y-m-d h:i:sP');
+            $retval->timestamp = date( 'Y-m-d h:i:sP' );
         }
 
         return $retval;
@@ -177,12 +180,12 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    protected function handleResult($data)
+    protected function handleResult( $data )
     {
-        if (empty($data->data)) {
+        if ( empty( $data->data ) ) {
             $data->data = new stdClass();
         }
-        if ($data->http_code !== 200) {
+        if ( $data->http_code !== 200 ) {
             $data->data->is_error = true;
             $data->data->http_code = $data->http_code;
             $data->data->headers = $data->headers;
@@ -202,22 +205,20 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    protected function handleError($customMessage = null)
+    protected function handleError( $customMessage = null )
     {
         $message = new stdClass();
         $message->is_error = true;
-        if (null !== $customMessage) {
+        if ( null !== $customMessage ) {
             $message->message = $customMessage;
         }
 
         return $message;
     }
 
-
     /*
      * API interface implementation
      */
-
 
     /**
      * Create address book
@@ -226,16 +227,16 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function createAddressBook($bookName)
+    public function createAddressBook( $bookName )
     {
-        if (empty($bookName)) {
-            return $this->handleError('Empty book name');
+        if ( empty( $bookName ) ) {
+            return $this->handleError( 'Empty book name' );
         }
 
-        $data = array('bookName' => $bookName);
-        $requestResult = $this->sendRequest('addressbooks', 'POST', $data);
+        $data = [ 'bookName' => $bookName ];
+        $requestResult = $this->sendRequest( 'addressbooks', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -246,16 +247,16 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function editAddressBook($id, $newName)
+    public function editAddressBook( $id, $newName )
     {
-        if (empty($newName) || empty($id)) {
-            return $this->handleError('Empty new name or book id');
+        if ( empty( $newName ) || empty( $id ) ) {
+            return $this->handleError( 'Empty new name or book id' );
         }
 
-        $data = array('name' => $newName);
-        $requestResult = $this->sendRequest('addressbooks/' . $id, 'PUT', $data);
+        $data = [ 'name' => $newName ];
+        $requestResult = $this->sendRequest( 'addressbooks/' . $id, 'PUT', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -265,15 +266,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function removeAddressBook($id)
+    public function removeAddressBook( $id )
     {
-        if (empty($id)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $id ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
-        $requestResult = $this->sendRequest('addressbooks/' . $id, 'DELETE');
+        $requestResult = $this->sendRequest( 'addressbooks/' . $id, 'DELETE' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -284,19 +285,19 @@ class ApiClient implements ApiInterface
      *
      * @return mixed
      */
-    public function listAddressBooks($limit = null, $offset = null)
+    public function listAddressBooks( $limit = null, $offset = null )
     {
-        $data = array();
-        if (null !== $limit) {
+        $data = [];
+        if ( null !== $limit ) {
             $data['limit'] = $limit;
         }
-        if (null !== $offset) {
+        if ( null !== $offset ) {
             $data['offset'] = $offset;
         }
 
-        $requestResult = $this->sendRequest('addressbooks', 'GET', $data);
+        $requestResult = $this->sendRequest( 'addressbooks', 'GET', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -306,15 +307,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function getBookInfo($id)
+    public function getBookInfo( $id )
     {
-        if (empty($id)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $id ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
-        $requestResult = $this->sendRequest('addressbooks/' . $id);
+        $requestResult = $this->sendRequest( 'addressbooks/' . $id );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -325,39 +326,39 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function getBookVariables($id)
+    public function getBookVariables( $id )
     {
-        if (empty($id)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $id ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
-        $requestResult = $this->sendRequest('addressbooks/' . $id . '/variables');
+        $requestResult = $this->sendRequest( 'addressbooks/' . $id . '/variables' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Change varible by user email
      *
-     * @param int $bookID
-     * @param string $email User email
-     * @param array $vars User vars in [key=>value] format
+     * @param  int    $bookID
+     * @param  string $email  User email
+     * @param  array  $vars   User vars in [key=>value] format
      * @return stdClass
      */
-    public function updateEmailVariables(int $bookID, string $email, array $vars)
+    public function updateEmailVariables( int $bookID, string $email, array $vars )
     {
-        if (empty($bookID)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $bookID ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
         $data = ['email' => $email, 'variables' => []];
-        foreach ($vars as $name => $val) {
+        foreach ( $vars as $name => $val ) {
             $data['variables'][] = ['name' => $name, 'value' => $val];
         }
 
-        $requestResult = $this->sendRequest('/addressbooks/' . $bookID . '/emails/variable', 'POST', $data);
+        $requestResult = $this->sendRequest( '/addressbooks/' . $bookID . '/emails/variable', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -369,23 +370,23 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function getEmailsFromBook($id, $limit = null, $offset = null)
+    public function getEmailsFromBook( $id, $limit = null, $offset = null )
     {
-        if (empty($id)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $id ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
-        $data = array();
-        if (null !== $limit) {
+        $data = [];
+        if ( null !== $limit ) {
             $data['limit'] = $limit;
         }
-        if (null !== $offset) {
+        if ( null !== $offset ) {
             $data['offset'] = $offset;
         }
 
-        $requestResult = $this->sendRequest('addressbooks/' . $id . '/emails', 'GET', $data);
+        $requestResult = $this->sendRequest( 'addressbooks/' . $id . '/emails', 'GET', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -395,15 +396,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function bookCountSubscriptions($bookID)
+    public function bookCountSubscriptions( $bookID )
     {
-        if (empty($bookID)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $bookID ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
-        $requestResult = $this->sendRequest('addressbooks/' . $bookID . '/emails/total');
+        $requestResult = $this->sendRequest( 'addressbooks/' . $bookID . '/emails/total' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -415,23 +416,23 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function addEmails($bookID, $emails, $additionalParams = [])
+    public function addEmails( $bookID, $emails, $additionalParams = [] )
     {
-        if (empty($bookID) || empty($emails)) {
-            return $this->handleError('Empty book id or emails');
+        if ( empty( $bookID ) || empty( $emails ) ) {
+            return $this->handleError( 'Empty book id or emails' );
         }
 
-        $data = array(
-            'emails' => json_encode($emails),
-        );
+        $data = [
+            'emails' => json_encode( $emails ),
+        ];
 
-        if ($additionalParams) {
-            $data = array_merge($data, $additionalParams);
+        if ( $additionalParams ) {
+            $data = array_merge( $data, $additionalParams );
         }
 
-        $requestResult = $this->sendRequest('addressbooks/' . $bookID . '/emails', 'POST', $data);
+        $requestResult = $this->sendRequest( 'addressbooks/' . $bookID . '/emails', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -442,19 +443,19 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function removeEmails($bookID, $emails)
+    public function removeEmails( $bookID, $emails )
     {
-        if (empty($bookID) || empty($emails)) {
-            return $this->handleError('Empty book id or emails');
+        if ( empty( $bookID ) || empty( $emails ) ) {
+            return $this->handleError( 'Empty book id or emails' );
         }
 
-        $data = array(
-            'emails' => serialize($emails),
-        );
+        $data = [
+            'emails' => serialize( $emails ),
+        ];
 
-        $requestResult = $this->sendRequest('addressbooks/' . $bookID . '/emails', 'DELETE', $data);
+        $requestResult = $this->sendRequest( 'addressbooks/' . $bookID . '/emails', 'DELETE', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -465,19 +466,19 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function unsubscribeEmails($bookID, $emails)
+    public function unsubscribeEmails( $bookID, $emails )
     {
-        if (empty($bookID) || empty($emails)) {
-            return $this->handleError('Empty book id or emails');
+        if ( empty( $bookID ) || empty( $emails ) ) {
+            return $this->handleError( 'Empty book id or emails' );
         }
 
-        $data = array(
-            'emails' => serialize($emails),
-        );
+        $data = [
+            'emails' => serialize( $emails ),
+        ];
 
-        $requestResult = $this->sendRequest('addressbooks/' . $bookID . '/emails/unsubscribe', 'POST', $data);
+        $requestResult = $this->sendRequest( 'addressbooks/' . $bookID . '/emails/unsubscribe', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -488,15 +489,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function getEmailInfo($bookID, $email)
+    public function getEmailInfo( $bookID, $email )
     {
-        if (empty($bookID) || empty($email)) {
-            return $this->handleError('Empty book id or email');
+        if ( empty( $bookID ) || empty( $email ) ) {
+            return $this->handleError( 'Empty book id or email' );
         }
 
-        $requestResult = $this->sendRequest('addressbooks/' . $bookID . '/emails/' . $email);
+        $requestResult = $this->sendRequest( 'addressbooks/' . $bookID . '/emails/' . $email );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -506,15 +507,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function campaignCost($bookID)
+    public function campaignCost( $bookID )
     {
-        if (empty($bookID)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $bookID ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
-        $requestResult = $this->sendRequest('addressbooks/' . $bookID . '/cost');
+        $requestResult = $this->sendRequest( 'addressbooks/' . $bookID . '/cost' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -525,18 +526,18 @@ class ApiClient implements ApiInterface
      *
      * @return mixed
      */
-    public function listCampaigns($limit = null, $offset = null)
+    public function listCampaigns( $limit = null, $offset = null )
     {
-        $data = array();
-        if (!empty($limit)) {
+        $data = [];
+        if ( !empty( $limit ) ) {
             $data['limit'] = $limit;
         }
-        if (!empty($offset)) {
+        if ( !empty( $offset ) ) {
             $data['offset'] = $offset;
         }
-        $requestResult = $this->sendRequest('campaigns', 'GET', $data);
+        $requestResult = $this->sendRequest( 'campaigns', 'GET', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -546,15 +547,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function getCampaignInfo($id)
+    public function getCampaignInfo( $id )
     {
-        if (empty($id)) {
-            return $this->handleError('Empty campaign id');
+        if ( empty( $id ) ) {
+            return $this->handleError( 'Empty campaign id' );
         }
 
-        $requestResult = $this->sendRequest('campaigns/' . $id);
+        $requestResult = $this->sendRequest( 'campaigns/' . $id );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -564,15 +565,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function campaignStatByCountries($id)
+    public function campaignStatByCountries( $id )
     {
-        if (empty($id)) {
-            return $this->handleError('Empty campaign id');
+        if ( empty( $id ) ) {
+            return $this->handleError( 'Empty campaign id' );
         }
 
-        $requestResult = $this->sendRequest('campaigns/' . $id . '/countries');
+        $requestResult = $this->sendRequest( 'campaigns/' . $id . '/countries' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -582,32 +583,32 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function campaignStatByReferrals($id)
+    public function campaignStatByReferrals( $id )
     {
-        if (empty($id)) {
-            return $this->handleError('Empty campaign id');
+        if ( empty( $id ) ) {
+            return $this->handleError( 'Empty campaign id' );
         }
 
-        $requestResult = $this->sendRequest('campaigns/' . $id . '/referrals');
+        $requestResult = $this->sendRequest( 'campaigns/' . $id . '/referrals' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Create new campaign
      *
-     * @param $senderName
-     * @param $senderEmail
-     * @param $subject
-     * @param $bodyOrTemplateId
-     * @param $bookId
-     * @param string $name
-     * @param array $attachments
-     * @param string $type
-     * @param bool $useTemplateId
-     * @param string $sendDate
-     * @param int|null $segmentId
-     * @param array $attachmentsBinary
+     * @param  $senderName
+     * @param  $senderEmail
+     * @param  $subject
+     * @param  $bodyOrTemplateId
+     * @param  $bookId
+     * @param  string   $name
+     * @param  array    $attachments
+     * @param  string   $type
+     * @param  bool     $useTemplateId
+     * @param  string   $sendDate
+     * @param  int|null $segmentId
+     * @param  array    $attachmentsBinary
      * @return mixed
      */
     public function createCampaign(
@@ -623,21 +624,20 @@ class ApiClient implements ApiInterface
         $sendDate = '',
         $segmentId = null,
         $attachmentsBinary = []
-    )
-    {
-        if (empty($senderName) || empty($senderEmail) || empty($subject) || empty($bodyOrTemplateId) || empty($bookId)) {
-            return $this->handleError('Not all data.');
+    ) {
+        if ( empty( $senderName ) || empty( $senderEmail ) || empty( $subject ) || empty( $bodyOrTemplateId ) || empty( $bookId ) ) {
+            return $this->handleError( 'Not all data.' );
         }
 
-        if ($useTemplateId) {
+        if ( $useTemplateId ) {
             $paramName = 'template_id';
             $paramValue = $bodyOrTemplateId;
         } else {
             $paramName = 'body';
-            $paramValue = base64_encode($bodyOrTemplateId);
+            $paramValue = base64_encode( $bodyOrTemplateId );
         }
 
-        $data = array(
+        $data = [
             'sender_name' => $senderName,
             'sender_email' => $senderEmail,
             'subject' => $subject,
@@ -645,25 +645,25 @@ class ApiClient implements ApiInterface
             'list_id' => $bookId,
             'name' => $name,
             'type' => $type,
-        );
+        ];
 
-        if (!empty($attachments)) {
+        if ( !empty( $attachments ) ) {
             $data['attachments'] = $attachments;
-        } elseif (!empty($attachmentsBinary)) {
+        } elseif ( !empty( $attachmentsBinary ) ) {
             $data['attachments_binary'] = $attachmentsBinary;
         }
 
-        if (!empty($sendDate)) {
+        if ( !empty( $sendDate ) ) {
             $data['send_date'] = $sendDate;
         }
 
-        if (!empty($segmentId)) {
+        if ( !empty( $segmentId ) ) {
             $data['segment_id'] = $segmentId;
         }
 
-        $requestResult = $this->sendRequest('campaigns', 'POST', $data);
+        $requestResult = $this->sendRequest( 'campaigns', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -673,15 +673,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function cancelCampaign($id)
+    public function cancelCampaign( $id )
     {
-        if (empty($id)) {
-            return $this->handleError('Empty campaign id');
+        if ( empty( $id ) ) {
+            return $this->handleError( 'Empty campaign id' );
         }
 
-        $requestResult = $this->sendRequest('campaigns/' . $id, 'DELETE');
+        $requestResult = $this->sendRequest( 'campaigns/' . $id, 'DELETE' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -691,9 +691,9 @@ class ApiClient implements ApiInterface
      */
     public function listSenders()
     {
-        $requestResult = $this->sendRequest('senders');
+        $requestResult = $this->sendRequest( 'senders' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -703,9 +703,9 @@ class ApiClient implements ApiInterface
      */
     public function listSMSSenders()
     {
-        $requestResult = $this->sendRequest('sms/senders');
+        $requestResult = $this->sendRequest( 'sms/senders' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -716,20 +716,20 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function addSender($senderName, $senderEmail)
+    public function addSender( $senderName, $senderEmail )
     {
-        if (empty($senderName) || empty($senderEmail)) {
-            return $this->handleError('Empty sender name or email');
+        if ( empty( $senderName ) || empty( $senderEmail ) ) {
+            return $this->handleError( 'Empty sender name or email' );
         }
 
-        $data = array(
+        $data = [
             'email' => $senderEmail,
             'name' => $senderName,
-        );
+        ];
 
-        $requestResult = $this->sendRequest('senders', 'POST', $data);
+        $requestResult = $this->sendRequest( 'senders', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -739,19 +739,19 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function removeSender($email)
+    public function removeSender( $email )
     {
-        if (empty($email)) {
-            return $this->handleError('Empty email');
+        if ( empty( $email ) ) {
+            return $this->handleError( 'Empty email' );
         }
 
-        $data = array(
+        $data = [
             'email' => $email,
-        );
+        ];
 
-        $requestResult = $this->sendRequest('senders', 'DELETE', $data);
+        $requestResult = $this->sendRequest( 'senders', 'DELETE', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -762,19 +762,19 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function activateSender($email, $code)
+    public function activateSender( $email, $code )
     {
-        if (empty($email) || empty($code)) {
-            return $this->handleError('Empty email or activation code');
+        if ( empty( $email ) || empty( $code ) ) {
+            return $this->handleError( 'Empty email or activation code' );
         }
 
-        $data = array(
+        $data = [
             'code' => $code,
-        );
+        ];
 
-        $requestResult = $this->sendRequest('senders/' . $email . '/code', 'POST', $data);
+        $requestResult = $this->sendRequest( 'senders/' . $email . '/code', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -784,15 +784,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function getSenderActivationMail($email)
+    public function getSenderActivationMail( $email )
     {
-        if (empty($email)) {
-            return $this->handleError('Empty email');
+        if ( empty( $email ) ) {
+            return $this->handleError( 'Empty email' );
         }
 
-        $requestResult = $this->sendRequest('senders/' . $email . '/code');
+        $requestResult = $this->sendRequest( 'senders/' . $email . '/code' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -802,32 +802,32 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function getEmailGlobalInfo($email)
+    public function getEmailGlobalInfo( $email )
     {
-        if (empty($email)) {
-            return $this->handleError('Empty email');
+        if ( empty( $email ) ) {
+            return $this->handleError( 'Empty email' );
         }
 
-        $requestResult = $this->sendRequest('emails/' . $email);
+        $requestResult = $this->sendRequest( 'emails/' . $email );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Get global information about list of emails
      *
-     * @param array $emails Emails list
+     * @param  array $emails Emails list
      * @return stdClass
      */
-    public function getEmailsGlobalInfo($emails)
+    public function getEmailsGlobalInfo( $emails )
     {
-        if (empty($emails)) {
-            return $this->handleError('Empty emails list');
+        if ( empty( $emails ) ) {
+            return $this->handleError( 'Empty emails list' );
         }
 
-        $requestResult = $this->sendRequest('emails', 'POST', $emails);
+        $requestResult = $this->sendRequest( 'emails', 'POST', $emails );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -837,15 +837,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function removeEmailFromAllBooks($email)
+    public function removeEmailFromAllBooks( $email )
     {
-        if (empty($email)) {
-            return $this->handleError('Empty email');
+        if ( empty( $email ) ) {
+            return $this->handleError( 'Empty email' );
         }
 
-        $requestResult = $this->sendRequest('emails/' . $email, 'DELETE');
+        $requestResult = $this->sendRequest( 'emails/' . $email, 'DELETE' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -855,15 +855,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function emailStatByCampaigns($email)
+    public function emailStatByCampaigns( $email )
     {
-        if (empty($email)) {
-            return $this->handleError('Empty email');
+        if ( empty( $email ) ) {
+            return $this->handleError( 'Empty email' );
         }
 
-        $requestResult = $this->sendRequest('emails/' . $email . '/campaigns');
+        $requestResult = $this->sendRequest( 'emails/' . $email . '/campaigns' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -873,33 +873,33 @@ class ApiClient implements ApiInterface
      */
     public function getBlackList()
     {
-        $requestResult = $this->sendRequest('blacklist');
+        $requestResult = $this->sendRequest( 'blacklist' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Add email to blacklist
      *
-     * @param        $emails - string with emails, separator - ,
+     * @param $emails  - string with emails, separator - ,
      * @param string $comment
      *
      * @return stdClass
      */
-    public function addToBlackList($emails, $comment = '')
+    public function addToBlackList( $emails, $comment = '' )
     {
-        if (empty($emails)) {
-            return $this->handleError('Empty email');
+        if ( empty( $emails ) ) {
+            return $this->handleError( 'Empty email' );
         }
 
-        $data = array(
-            'emails' => base64_encode($emails),
+        $data = [
+            'emails' => base64_encode( $emails ),
             'comment' => $comment,
-        );
+        ];
 
-        $requestResult = $this->sendRequest('blacklist', 'POST', $data);
+        $requestResult = $this->sendRequest( 'blacklist', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -909,19 +909,19 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function removeFromBlackList($emails)
+    public function removeFromBlackList( $emails )
     {
-        if (empty($emails)) {
-            return $this->handleError('Empty email');
+        if ( empty( $emails ) ) {
+            return $this->handleError( 'Empty email' );
         }
 
-        $data = array(
-            'emails' => base64_encode($emails),
-        );
+        $data = [
+            'emails' => base64_encode( $emails ),
+        ];
 
-        $requestResult = $this->sendRequest('blacklist', 'DELETE', $data);
+        $requestResult = $this->sendRequest( 'blacklist', 'DELETE', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -931,24 +931,24 @@ class ApiClient implements ApiInterface
      *
      * @return mixed
      */
-    public function getBalance($currency = '')
+    public function getBalance( $currency = '' )
     {
-        $currency = strtoupper($currency);
+        $currency = strtoupper( $currency );
         $url = 'balance';
-        if (!empty($currency)) {
-            $url .= '/' . strtoupper($currency);
+        if ( !empty( $currency ) ) {
+            $url .= '/' . strtoupper( $currency );
         }
 
-        $requestResult = $this->sendRequest($url);
+        $requestResult = $this->sendRequest( $url );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * SMTP: get list of emails
      *
-     * @param int $limit
-     * @param int $offset
+     * @param int    $limit
+     * @param int    $offset
      * @param string $fromDate
      * @param string $toDate
      * @param string $sender
@@ -957,9 +957,9 @@ class ApiClient implements ApiInterface
      *
      * @return mixed
      */
-    public function smtpListEmails($limit = 0, $offset = 0, $fromDate = '', $toDate = '', $sender = '', $recipient = '', $country = 'off')
+    public function smtpListEmails( $limit = 0, $offset = 0, $fromDate = '', $toDate = '', $sender = '', $recipient = '', $country = 'off' )
     {
-        $data = array(
+        $data = [
             'limit' => $limit,
             'offset' => $offset,
             'from' => $fromDate,
@@ -967,11 +967,11 @@ class ApiClient implements ApiInterface
             'sender' => $sender,
             'recipient' => $recipient,
             'country' => $country,
-        );
+        ];
 
-        $requestResult = $this->sendRequest('/smtp/emails', 'GET', $data);
+        $requestResult = $this->sendRequest( '/smtp/emails', 'GET', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -981,15 +981,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function smtpGetEmailInfoById($id)
+    public function smtpGetEmailInfoById( $id )
     {
-        if (empty($id)) {
-            return $this->handleError('Empty id');
+        if ( empty( $id ) ) {
+            return $this->handleError( 'Empty id' );
         }
 
-        $requestResult = $this->sendRequest('/smtp/emails/' . $id);
+        $requestResult = $this->sendRequest( '/smtp/emails/' . $id );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1000,19 +1000,19 @@ class ApiClient implements ApiInterface
      *
      * @return mixed
      */
-    public function smtpListUnsubscribed($limit = null, $offset = null)
+    public function smtpListUnsubscribed( $limit = null, $offset = null )
     {
-        $data = array();
-        if (null !== $limit) {
+        $data = [];
+        if ( null !== $limit ) {
             $data['limit'] = $limit;
         }
-        if (null !== $offset) {
+        if ( null !== $offset ) {
             $data['offset'] = $offset;
         }
 
-        $requestResult = $this->sendRequest('smtp/unsubscribe', 'GET', $data);
+        $requestResult = $this->sendRequest( 'smtp/unsubscribe', 'GET', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1022,19 +1022,19 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function smtpUnsubscribeEmails($emails)
+    public function smtpUnsubscribeEmails( $emails )
     {
-        if (empty($emails)) {
-            return $this->handleError('Empty emails');
+        if ( empty( $emails ) ) {
+            return $this->handleError( 'Empty emails' );
         }
 
-        $data = array(
-            'emails' => serialize($emails),
-        );
+        $data = [
+            'emails' => serialize( $emails ),
+        ];
 
-        $requestResult = $this->sendRequest('/smtp/unsubscribe', 'POST', $data);
+        $requestResult = $this->sendRequest( '/smtp/unsubscribe', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1044,19 +1044,19 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function smtpRemoveFromUnsubscribe($emails)
+    public function smtpRemoveFromUnsubscribe( $emails )
     {
-        if (empty($emails)) {
-            return $this->handleError('Empty emails');
+        if ( empty( $emails ) ) {
+            return $this->handleError( 'Empty emails' );
         }
 
-        $data = array(
-            'emails' => serialize($emails),
-        );
+        $data = [
+            'emails' => serialize( $emails ),
+        ];
 
-        $requestResult = $this->sendRequest('/smtp/unsubscribe', 'DELETE', $data);
+        $requestResult = $this->sendRequest( '/smtp/unsubscribe', 'DELETE', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1066,9 +1066,9 @@ class ApiClient implements ApiInterface
      */
     public function smtpListIP()
     {
-        $requestResult = $this->sendRequest('smtp/ips');
+        $requestResult = $this->sendRequest( 'smtp/ips' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1078,9 +1078,9 @@ class ApiClient implements ApiInterface
      */
     public function smtpListAllowedDomains()
     {
-        $requestResult = $this->sendRequest('smtp/domains');
+        $requestResult = $this->sendRequest( 'smtp/domains' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1090,19 +1090,19 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function smtpAddDomain($email)
+    public function smtpAddDomain( $email )
     {
-        if (empty($email)) {
-            return $this->handleError('Empty email');
+        if ( empty( $email ) ) {
+            return $this->handleError( 'Empty email' );
         }
 
-        $data = array(
+        $data = [
             'email' => $email,
-        );
+        ];
 
-        $requestResult = $this->sendRequest('smtp/domains', 'POST', $data);
+        $requestResult = $this->sendRequest( 'smtp/domains', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1112,15 +1112,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function smtpVerifyDomain($email)
+    public function smtpVerifyDomain( $email )
     {
-        if (empty($email)) {
-            return $this->handleError('Empty email');
+        if ( empty( $email ) ) {
+            return $this->handleError( 'Empty email' );
         }
 
-        $requestResult = $this->sendRequest('smtp/domains/' . $email);
+        $requestResult = $this->sendRequest( 'smtp/domains/' . $email );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1130,31 +1130,31 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function smtpSendMail($email)
+    public function smtpSendMail( $email )
     {
-        if (empty($email)) {
-            return $this->handleError('Empty email data');
+        if ( empty( $email ) ) {
+            return $this->handleError( 'Empty email data' );
         }
 
         $emailData = $email;
-        if (isset($email['html'])) {
-            $emailData['html'] = base64_encode($email['html']);
+        if ( isset( $email['html'] ) ) {
+            $emailData['html'] = base64_encode( $email['html'] );
         }
 
-        $data = array(
-            'email' => serialize($emailData),
-        );
+        $data = [
+            'email' => serialize( $emailData ),
+        ];
 
-        $requestResult = $this->sendRequest('smtp/emails', 'POST', $data);
+        $requestResult = $this->sendRequest( 'smtp/emails', 'POST', $data );
 
-        if ($requestResult->http_code !== 200 && !$this->retry) {
+        if ( $requestResult->http_code !== 200 && !$this->retry ) {
             $this->retry = true;
-            sleep(2);
+            sleep( 2 );
 
-            return $this->smtpSendMail($email);
+            return $this->smtpSendMail( $email );
         }
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1165,19 +1165,19 @@ class ApiClient implements ApiInterface
      *
      * @return mixed
      */
-    public function pushListCampaigns($limit = null, $offset = null)
+    public function pushListCampaigns( $limit = null, $offset = null )
     {
-        $data = array();
-        if (null !== $limit) {
+        $data = [];
+        if ( null !== $limit ) {
             $data['limit'] = $limit;
         }
-        if (null !== $offset) {
+        if ( null !== $offset ) {
             $data['offset'] = $offset;
         }
 
-        $requestResult = $this->sendRequest('push/tasks', 'GET', $data);
+        $requestResult = $this->sendRequest( 'push/tasks', 'GET', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1188,19 +1188,19 @@ class ApiClient implements ApiInterface
      *
      * @return mixed
      */
-    public function pushListWebsites($limit = null, $offset = null)
+    public function pushListWebsites( $limit = null, $offset = null )
     {
-        $data = array();
-        if (null !== $limit) {
+        $data = [];
+        if ( null !== $limit ) {
             $data['limit'] = $limit;
         }
-        if (null !== $offset) {
+        if ( null !== $offset ) {
             $data['offset'] = $offset;
         }
 
-        $requestResult = $this->sendRequest('push/websites', 'GET', $data);
+        $requestResult = $this->sendRequest( 'push/websites', 'GET', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1210,9 +1210,9 @@ class ApiClient implements ApiInterface
      */
     public function pushCountWebsites()
     {
-        $requestResult = $this->sendRequest('push/websites/total');
+        $requestResult = $this->sendRequest( 'push/websites/total' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1222,36 +1222,36 @@ class ApiClient implements ApiInterface
      *
      * @return mixed
      */
-    public function pushListWebsiteVariables($websiteId)
+    public function pushListWebsiteVariables( $websiteId )
     {
-        $requestResult = $this->sendRequest('push/websites/' . $websiteId . '/variables');
+        $requestResult = $this->sendRequest( 'push/websites/' . $websiteId . '/variables' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Get list of subscriptions for the website
      *
-     * @param      $websiteID
+     * @param $websiteID
      *
      * @param null $limit
      * @param null $offset
      *
      * @return mixed
      */
-    public function pushListWebsiteSubscriptions($websiteID, $limit = null, $offset = null)
+    public function pushListWebsiteSubscriptions( $websiteID, $limit = null, $offset = null )
     {
-        $data = array();
-        if (null !== $limit) {
+        $data = [];
+        if ( null !== $limit ) {
             $data['limit'] = $limit;
         }
-        if (null !== $offset) {
+        if ( null !== $offset ) {
             $data['offset'] = $offset;
         }
 
-        $requestResult = $this->sendRequest('push/websites/' . $websiteID . '/subscriptions', 'GET', $data);
+        $requestResult = $this->sendRequest( 'push/websites/' . $websiteID . '/subscriptions', 'GET', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1261,11 +1261,11 @@ class ApiClient implements ApiInterface
      *
      * @return mixed
      */
-    public function pushCountWebsiteSubscriptions($websiteID)
+    public function pushCountWebsiteSubscriptions( $websiteID )
     {
-        $requestResult = $this->sendRequest('push/websites/' . $websiteID . '/subscriptions/total');
+        $requestResult = $this->sendRequest( 'push/websites/' . $websiteID . '/subscriptions/total' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1276,16 +1276,16 @@ class ApiClient implements ApiInterface
      *
      * @return mixed
      */
-    public function pushSetSubscriptionState($subscriptionID, $stateValue)
+    public function pushSetSubscriptionState( $subscriptionID, $stateValue )
     {
-        $data = array(
+        $data = [
             'id' => $subscriptionID,
             'state' => $stateValue,
-        );
+        ];
 
-        $requestResult = $this->sendRequest('push/subscriptions/state', 'POST', $data);
+        $requestResult = $this->sendRequest( 'push/subscriptions/state', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1295,40 +1295,39 @@ class ApiClient implements ApiInterface
      *
      * @return mixed
      */
-    public function pushGetWebsiteInfo($websiteId)
+    public function pushGetWebsiteInfo( $websiteId )
     {
-        $requestResult = $this->sendRequest('push/websites/info/' . $websiteId);
+        $requestResult = $this->sendRequest( 'push/websites/info/' . $websiteId );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
-
 
     /**
      * Create new push campaign
      *
-     * @param       $taskInfo
+     * @param $taskInfo
      * @param array $additionalParams
      *
      * @return stdClass
      */
-    public function createPushTask($taskInfo, array $additionalParams = array())
+    public function createPushTask( $taskInfo, array $additionalParams = [] )
     {
         $data = $taskInfo;
-        if (!isset($data['ttl'])) {
+        if ( !isset( $data['ttl'] ) ) {
             $data['ttl'] = 0;
         }
-        if (empty($data['title']) || empty($data['website_id']) || empty($data['body'])) {
-            return $this->handleError('Not all data');
+        if ( empty( $data['title'] ) || empty( $data['website_id'] ) || empty( $data['body'] ) ) {
+            return $this->handleError( 'Not all data' );
         }
-        if ($additionalParams) {
-            foreach ($additionalParams as $key => $val) {
+        if ( $additionalParams ) {
+            foreach ( $additionalParams as $key => $val ) {
                 $data[$key] = $val;
             }
         }
 
-        $requestResult = $this->sendRequest('/push/tasks', 'POST', $data);
+        $requestResult = $this->sendRequest( '/push/tasks', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1338,15 +1337,15 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function getPushIntegrationCode($websiteID)
+    public function getPushIntegrationCode( $websiteID )
     {
-        if (empty($websiteID)) {
-            return $this->handleError('Empty website id');
+        if ( empty( $websiteID ) ) {
+            return $this->handleError( 'Empty website id' );
         }
 
-        $requestResult = $this->sendRequest('/push/websites/' . $websiteID . '/code');
+        $requestResult = $this->sendRequest( '/push/websites/' . $websiteID . '/code' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1356,178 +1355,178 @@ class ApiClient implements ApiInterface
      *
      * @return stdClass
      */
-    public function getPushCampaignStat($campaignID)
+    public function getPushCampaignStat( $campaignID )
     {
-        $requestResult = $this->sendRequest('push/tasks/' . $campaignID);
+        $requestResult = $this->sendRequest( 'push/tasks/' . $campaignID );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * @Author Maksym Dzhym m.jim@sendpulse.com
-     * @param $eventName
-     * @param array $variables
+     * @param  $eventName
+     * @param  array $variables
      * @return stdClass
      */
-    public function startEventAutomation360($eventName, array $variables)
+    public function startEventAutomation360( $eventName, array $variables )
     {
-        if (!$eventName) {
-            return $this->handleError('Event name is empty');
+        if ( !$eventName ) {
+            return $this->handleError( 'Event name is empty' );
         }
-        if (!array_key_exists('email', $variables) && !array_key_exists('phone', $variables)) {
-            return $this->handleError('Email and phone is empty');
+        if ( !array_key_exists( 'email', $variables ) && !array_key_exists( 'phone', $variables ) ) {
+            return $this->handleError( 'Email and phone is empty' );
         }
 
-        $requestResult = $this->sendRequest('events/name/' . $eventName, 'POST', $variables);
+        $requestResult = $this->sendRequest( 'events/name/' . $eventName, 'POST', $variables );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Add phones to addressbook
      *
-     * @param $bookID
-     * @param array $phones
+     * @param  $bookID
+     * @param  array $phones
      * @return stdClass
      */
-    public function addPhones($bookID, array $phones)
+    public function addPhones( $bookID, array $phones )
     {
-        if (empty($bookID)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $bookID ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
         $data = [
             'addressBookId' => $bookID,
-            'phones' => json_encode($phones)
+            'phones' => json_encode( $phones )
         ];
 
-        $requestResult = $this->sendRequest('/sms/numbers', 'POST', $data);
+        $requestResult = $this->sendRequest( '/sms/numbers', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Add phones with variables to addressbook
      *
-     * @param $bookID
-     * @param array $phones
+     * @param  $bookID
+     * @param  array $phones
      * @return stdClass
      */
-    public function addPhonesWithVariables($bookID, array $phonesWithVariables)
+    public function addPhonesWithVariables( $bookID, array $phonesWithVariables )
     {
-        if (empty($bookID)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $bookID ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
         $data = [
             'addressBookId' => $bookID,
-            'phones' => json_encode($phonesWithVariables)
+            'phones' => json_encode( $phonesWithVariables )
         ];
 
-        $requestResult = $this->sendRequest('/sms/numbers/variables', 'POST', $data);
+        $requestResult = $this->sendRequest( '/sms/numbers/variables', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Update variables for phones
      *
-     * @param $bookID
-     * @param array $phones
-     * @param array $variables
+     * @param  $bookID
+     * @param  array $phones
+     * @param  array $variables
      * @return stdClass
      */
-    public function updatePhoneVaribales($bookID, array $phones, array $variables)
+    public function updatePhoneVaribales( $bookID, array $phones, array $variables )
     {
-        if (empty($bookID)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $bookID ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
         $data = [
             'addressBookId' => $bookID,
-            'phones' => json_encode($phones),
-            'variables' => json_encode($variables)
+            'phones' => json_encode( $phones ),
+            'variables' => json_encode( $variables )
         ];
 
-        $requestResult = $this->sendRequest('/sms/numbers', 'PUT', $data);
+        $requestResult = $this->sendRequest( '/sms/numbers', 'PUT', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Delete phones from book
      *
-     * @param $bookID
-     * @param array $phones
+     * @param  $bookID
+     * @param  array $phones
      * @return stdClass
      */
-    public function deletePhones($bookID, array $phones)
+    public function deletePhones( $bookID, array $phones )
     {
-        if (empty($bookID)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $bookID ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
         $data = [
             'addressBookId' => $bookID,
-            'phones' => json_encode($phones)
+            'phones' => json_encode( $phones )
         ];
 
-        $requestResult = $this->sendRequest('/sms/numbers', 'DELETE', $data);
+        $requestResult = $this->sendRequest( '/sms/numbers', 'DELETE', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * get information about phone number
      *
-     * @param $bookID
-     * @param $phoneNumber
+     * @param  $bookID
+     * @param  $phoneNumber
      * @return stdClass
      */
-    public function getPhoneInfo($bookID, $phoneNumber)
+    public function getPhoneInfo( $bookID, $phoneNumber )
     {
-        if (empty($bookID)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $bookID ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
-        $requestResult = $this->sendRequest('/sms/numbers/info/' . $bookID . '/' . $phoneNumber);
+        $requestResult = $this->sendRequest( '/sms/numbers/info/' . $bookID . '/' . $phoneNumber );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Add phones to blacklist
      *
-     * @param $bookID
-     * @param array $phones
+     * @param  $bookID
+     * @param  array $phones
      * @return stdClass
      */
-    public function addPhonesToBlacklist(array $phones)
+    public function addPhonesToBlacklist( array $phones )
     {
         $data = [
-            'phones' => json_encode($phones)
+            'phones' => json_encode( $phones )
         ];
 
-        $requestResult = $this->sendRequest('/sms/black_list', 'POST', $data);
+        $requestResult = $this->sendRequest( '/sms/black_list', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Delete phones from blacklist
      *
-     * @param array $phones
+     * @param  array $phones
      * @return stdClass
      */
-    public function removePhonesFromBlacklist(array $phones)
+    public function removePhonesFromBlacklist( array $phones )
     {
         $data = [
-            'phones' => json_encode($phones)
+            'phones' => json_encode( $phones )
         ];
 
-        $requestResult = $this->sendRequest('/sms/black_list', 'DELETE', $data);
+        $requestResult = $this->sendRequest( '/sms/black_list', 'DELETE', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
@@ -1537,136 +1536,136 @@ class ApiClient implements ApiInterface
      */
     public function getPhonesFromBlacklist()
     {
-        $requestResult = $this->sendRequest('/sms/black_list');
+        $requestResult = $this->sendRequest( '/sms/black_list' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Create sms campaign based on phones in book
      *
-     * @param $bookID
-     * @param array $params
-     * @param array $additionalParams
+     * @param  $bookID
+     * @param  array $params
+     * @param  array $additionalParams
      * @return stdClass
      */
-    public function sendSmsByBook($bookID, array $params, array $additionalParams = [])
+    public function sendSmsByBook( $bookID, array $params, array $additionalParams = [] )
     {
-        if (empty($bookID)) {
-            return $this->handleError('Empty book id');
+        if ( empty( $bookID ) ) {
+            return $this->handleError( 'Empty book id' );
         }
 
         $data = [
             'addressBookId' => $bookID
         ];
 
-        $data = array_merge($data, $params);
+        $data = array_merge( $data, $params );
 
-        if ($additionalParams) {
-            $data = array_merge($data, $additionalParams);
+        if ( $additionalParams ) {
+            $data = array_merge( $data, $additionalParams );
         }
 
-        $requestResult = $this->sendRequest('/sms/campaigns', 'POST', $data);
+        $requestResult = $this->sendRequest( '/sms/campaigns', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Create sms campaign based on list
      *
-     * @param $phones
-     * @param array $params
-     * @param array $additionalParams
+     * @param  $phones
+     * @param  array $params
+     * @param  array $additionalParams
      * @return stdClass
      */
-    public function sendSmsByList(array $phones, array $params, array $additionalParams)
+    public function sendSmsByList( array $phones, array $params, array $additionalParams )
     {
         $data = [
-            'phones' => json_encode($phones)
+            'phones' => json_encode( $phones )
         ];
 
-        $data = array_merge($data, $params);
+        $data = array_merge( $data, $params );
 
-        if ($additionalParams) {
-            $data = array_merge($data, $additionalParams);
+        if ( $additionalParams ) {
+            $data = array_merge( $data, $additionalParams );
         }
 
-        $requestResult = $this->sendRequest('/sms/send', 'POST', $data);
+        $requestResult = $this->sendRequest( '/sms/send', 'POST', $data );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * List sms campaigns
      *
-     * @param $params
+     * @param  $params
      * @return stdClass
      */
-    public function listSmsCampaigns(array $params = null)
+    public function listSmsCampaigns( array $params = null )
     {
-        $requestResult = $this->sendRequest('/sms/campaigns/list', 'GET', $params);
+        $requestResult = $this->sendRequest( '/sms/campaigns/list', 'GET', $params );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Get info about sms campaign
      *
-     * @param $campaignID
+     * @param  $campaignID
      * @return stdClass
      */
-    public function getSmsCampaignInfo($campaignID)
+    public function getSmsCampaignInfo( $campaignID )
     {
-        $requestResult = $this->sendRequest('/sms/campaigns/info/' . $campaignID);
+        $requestResult = $this->sendRequest( '/sms/campaigns/info/' . $campaignID );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Cancel SMS campaign
      *
-     * @param $campaignID
+     * @param  $campaignID
      * @return stdClass
      */
-    public function cancelSmsCampaign($campaignID)
+    public function cancelSmsCampaign( $campaignID )
     {
-        $requestResult = $this->sendRequest('/sms/campaigns/cancel/' . $campaignID, 'PUT');
+        $requestResult = $this->sendRequest( '/sms/campaigns/cancel/' . $campaignID, 'PUT' );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Get SMS campaign cost based on book or simple list
      *
-     * @param array $params
-     * @param array|null $additionalParams
+     * @param  array      $params
+     * @param  array|null $additionalParams
      * @return stdClass
      */
-    public function getSmsCampaignCost(array $params, array $additionalParams = null)
+    public function getSmsCampaignCost( array $params, array $additionalParams = null )
     {
-        if (!isset($params['addressBookId']) && !isset($params['phones'])) {
-            return $this->handleError('You mast pass phones list or addressbook ID');
+        if ( !isset( $params['addressBookId'] ) && !isset( $params['phones'] ) ) {
+            return $this->handleError( 'You mast pass phones list or addressbook ID' );
         }
 
-        if ($additionalParams) {
-            $params = array_merge($params, $additionalParams);
+        if ( $additionalParams ) {
+            $params = array_merge( $params, $additionalParams );
         }
 
-        $requestResult = $this->sendRequest('/sms/campaigns/cost', 'GET', $params);
+        $requestResult = $this->sendRequest( '/sms/campaigns/cost', 'GET', $params );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 
     /**
      * Delete SMS campaign
      *
-     * @param $campaignID
+     * @param  $campaignID
      * @return stdClass
      */
-    public function deleteSmsCampaign($campaignID)
+    public function deleteSmsCampaign( $campaignID )
     {
-        $requestResult = $this->sendRequest('/sms/campaigns', 'DELETE', ['id' => $campaignID]);
+        $requestResult = $this->sendRequest( '/sms/campaigns', 'DELETE', ['id' => $campaignID] );
 
-        return $this->handleResult($requestResult);
+        return $this->handleResult( $requestResult );
     }
 }
