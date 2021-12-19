@@ -1,6 +1,6 @@
-# SendPulse REST client library
+# SendPulse REST client library with throttling requests
 
-A simple SendPulse REST client library and example for PHP.
+A simple SendPulse REST client library with throttling requests (no more 10 per second according to API rules) and example for PHP.
 
 API Documentation [https://sendpulse.com/api](https://sendpulse.com/api)
 
