@@ -39,6 +39,9 @@ define('PATH_TO_ATTACH_FILE', __FILE__);
 
 $SPApiClient = new ApiClient(API_USER_ID, API_SECRET, new FileStorage());
 
+// DEBUG level can be one of: DEBUG_NONE (default) or DEBUG_URL, DEBUG_HEADERS, DEBUG_CONTENT
+$SPApiClient->debugLevel = ApiClient::DEBUG_URL;
+
 /*
  * Example: Get Mailing Lists
  */
