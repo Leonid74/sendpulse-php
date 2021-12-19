@@ -8,6 +8,7 @@
  * https://sendpulse.com/api
  *
  * @author modified by Leonid74 (forked from https://github.com/sendpulse/sendpulse-rest-api-php)
+ * @uses http-client parts of code (https://github.com/andrey-tech/http-client-php)
  */
 
 namespace Leonid74\Sendpulse;
@@ -19,6 +20,68 @@ use stdClass;
 
 class ApiClient implements ApiInterface
 {
+    /**
+     * Битовые маски для указания уровня вывода отладочной информации в свойстве $debugLevel
+     * @var int
+     */
+    public const DEBUG_NONE = 0; // 000 - не выводить
+    public const DEBUG_URL = 1 << 0; // 001 - URL запросов/ответов
+    public const DEBUG_HEADERS = 1 << 1; // 010 - заголовки запросов/ответов
+    public const DEBUG_CONTENT = 1 << 2; // 100 - содержимое запросов/ответов
+
+    /**
+     * Битовая маска уровня вывода отладочной информации
+     * \Leonid74\Sendpulse\ApiClient::DEBUG_NONE,
+     * \Leonid74\Sendpulse\ApiClient::DEBUG_URL,
+     * \Leonid74\Sendpulse\ApiClient::DEBUG_HEADERS,
+     * \Leonid74\Sendpulse\ApiClient::DEBUG_CONTENT
+     * @var int
+     */
+    public $debugLevel = self::DEBUG_NONE;
+
+    /**
+     * Максимальное число HTTP запросов в секунду (0 - троттлинг отключен)
+     * @var float
+     */
+    public $throttle = 10;
+
+    /**
+     * Коды статуса НТТР, соответствующие успешному выполнению запроса
+     * @var array
+     */
+    public $successStatusCodes = [ 200 ];
+
+    /**
+     * Таймаут соединения для cUrl, секунд
+     * @var integer
+     */
+    public $curlConnectTimeout = 60;
+
+    /**
+     * Таймаут обмена данными для cUrl, секунд
+     * @var integer
+     */
+    public $curlTimeout = 300;
+
+    /**
+     * Время последнего запроса, микросекунды
+     * @var float
+     */
+    private $lastRequestTime = 0;
+
+    /**
+     * Счетчик числа запросов для отладочных сообщений
+     * @var integer
+     */
+    private $requestCounter = 0;
+
+    /**
+     * Ресурс cURL
+     * var resource
+     * @var \CurlHandle
+     */
+    private $curl;
+
     private $apiUrl = 'https://api.sendpulse.com';
 
     private $userId;
@@ -36,8 +99,8 @@ class ApiClient implements ApiInterface
     /**
      * Sendpulse API constructor
      *
-     * @param $userId
-     * @param $secret
+     * @param                       $userId
+     * @param                       $secret
      * @param TokenStorageInterface $tokenStorage
      *
      * @throws Exception
@@ -56,9 +119,7 @@ class ApiClient implements ApiInterface
         $this->tokenStorage = $tokenStorage;
         $hashName = md5( $userId . '::' . $secret );
 
-        /**
-         * load token from storage
-         */
+        /** load token from storage */
         $this->token = $this->tokenStorage->get( $hashName );
 
         if ( empty( $this->token ) && !$this->getToken() ) {
@@ -89,9 +150,7 @@ class ApiClient implements ApiInterface
         $this->token = $requestResult->data->access_token;
 
         $hashName = md5( $this->userId . '::' . $this->secret );
-        /**
-         * Save token to storage
-         */
+        /** Save token to storage */
         $this->tokenStorage->set( $hashName, $this->token );
 
         return true;
@@ -100,10 +159,10 @@ class ApiClient implements ApiInterface
     /**
      * Form and send request to API service
      *
-     * @param $path
+     * @param        $path
      * @param string $method
-     * @param array  $data
-     * @param bool   $useToken
+     * @param array $data
+     * @param bool $useToken
      *
      * @return stdClass
      */
@@ -111,25 +170,30 @@ class ApiClient implements ApiInterface
     {
         $url = $this->apiUrl . '/' . $path;
         $method = strtoupper( $method );
-        $curl = curl_init();
+        $this->curl = curl_init();
 
         if ( $useToken && !empty( $this->token ) ) {
             $headers = [ 'Authorization: Bearer ' . $this->token, 'Expect:' ];
-            curl_setopt( $curl, CURLOPT_HTTPHEADER, $headers );
+            curl_setopt( $this->curl, CURLOPT_HTTPHEADER, $headers );
         }
+
+        // Увеличиваем счетчик числа отправленных запросов
+        $this->requestCounter++;
+
+        $this->debug( PHP_EOL . "[{$this->requestCounter}] ===> {$method} {$url}", self::DEBUG_URL );
 
         switch ( $method ) {
             case 'POST':
-                curl_setopt( $curl, CURLOPT_POST, count( $data ) );
-                curl_setopt( $curl, CURLOPT_POSTFIELDS, http_build_query( $data ) );
+                curl_setopt( $this->curl, CURLOPT_POST, count( $data ) );
+                curl_setopt( $this->curl, CURLOPT_POSTFIELDS, http_build_query( $data ) );
                 break;
             case 'PUT':
-                curl_setopt( $curl, CURLOPT_CUSTOMREQUEST, 'PUT' );
-                curl_setopt( $curl, CURLOPT_POSTFIELDS, http_build_query( $data ) );
+                curl_setopt( $this->curl, CURLOPT_CUSTOMREQUEST, 'PUT' );
+                curl_setopt( $this->curl, CURLOPT_POSTFIELDS, http_build_query( $data ) );
                 break;
             case 'DELETE':
-                curl_setopt( $curl, CURLOPT_CUSTOMREQUEST, 'DELETE' );
-                curl_setopt( $curl, CURLOPT_POSTFIELDS, http_build_query( $data ) );
+                curl_setopt( $this->curl, CURLOPT_CUSTOMREQUEST, 'DELETE' );
+                curl_setopt( $this->curl, CURLOPT_POSTFIELDS, http_build_query( $data ) );
                 break;
             default:
                 if ( !empty( $data ) ) {
@@ -137,23 +201,36 @@ class ApiClient implements ApiInterface
                 }
         }
 
-        curl_setopt( $curl, CURLOPT_URL, $url );
-        curl_setopt( $curl, CURLOPT_SSL_VERIFYPEER, false );
-        curl_setopt( $curl, CURLOPT_SSL_VERIFYHOST, false );
-        curl_setopt( $curl, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt( $curl, CURLOPT_HEADER, true );
-        curl_setopt( $curl, CURLOPT_CONNECTTIMEOUT, 300 );
-        curl_setopt( $curl, CURLOPT_TIMEOUT, 300 );
+        curl_setopt( $this->curl, CURLOPT_URL, $url );
+        curl_setopt( $this->curl, CURLOPT_SSL_VERIFYPEER, false );
+        curl_setopt( $this->curl, CURLOPT_SSL_VERIFYHOST, false );
+        curl_setopt( $this->curl, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $this->curl, CURLOPT_HEADER, true );
+        curl_setopt( $this->curl, CURLOPT_CONNECTTIMEOUT, $this->curlConnectTimeout );
+        curl_setopt( $this->curl, CURLOPT_TIMEOUT, $this->curlTimeout );
 
-        $response = curl_exec( $curl );
-        $header_size = curl_getinfo( $curl, CURLINFO_HEADER_SIZE );
-        $headerCode = curl_getinfo( $curl, CURLINFO_HTTP_CODE );
+        $response = $this->throttleCurl();
+        $deltaTime = sprintf( '%0.4f', microtime( true ) - $this->lastRequestTime );
+
+        $header_size = curl_getinfo( $this->curl, CURLINFO_HEADER_SIZE );
+        $headerCode = curl_getinfo( $this->curl, CURLINFO_HTTP_CODE );
         $responseBody = substr( $response, $header_size );
         $responseHeaders = substr( $response, 0, $header_size );
-        $ip = curl_getinfo( $curl, CURLINFO_PRIMARY_IP );
-        $curlErrors = curl_error( $curl );
+        $ip = curl_getinfo( $this->curl, CURLINFO_PRIMARY_IP );
+        $curlErrors = curl_error( $this->curl );
 
-        curl_close( $curl );
+        curl_close( $this->curl );
+
+        // Выводим заголовки и тело запроса
+        $this->debug( $this->curlInfo['request_header'] ?? 'REQUEST HEADERS ???', self::DEBUG_HEADERS );
+        if ( $method !== 'GET' ) {
+            $this->debug( http_build_query( $data ) . PHP_EOL, self::DEBUG_CONTENT );
+        }
+
+        // Выводим строку, заголовки и тело ответа
+        $this->debug( "[{$this->requestCounter}] <=== RESPONSE {$deltaTime}s ({$headerCode})", self::DEBUG_URL );
+        $this->debug( $responseHeaders, self::DEBUG_HEADERS );
+        $this->debug( $responseBody . PHP_EOL, self::DEBUG_CONTENT );
 
         if ( $headerCode === 401 && $this->refreshToken === 0 ) {
             ++$this->refreshToken;
@@ -174,6 +251,47 @@ class ApiClient implements ApiInterface
     }
 
     /**
+     * Обеспечивает троттлинг HTTP запросов
+     * @return string|false $response
+     */
+    private function throttleCurl()
+    {
+        do {
+            if ( empty( $this->throttle ) ) {
+                break;
+            }
+
+            // Вычисляем необходимое время задержки перед отправкой запроса, микросекунды
+            $usleep = (int)( 1E6 * ( $this->lastRequestTime + 1 / $this->throttle - microtime( true ) ) );
+            if ( $usleep <= 0 ) {
+                break;
+            }
+
+            $sleep = sprintf( '%0.4f', $usleep / 1E6 );
+            $this->debug( "[{$this->requestCounter}] +++++ THROTTLE REQUEST (' . $this->throttle . '/sec) {$sleep}'s +++++", self::DEBUG_URL );
+            usleep( $usleep );
+        } while ( false );
+        $this->lastRequestTime = microtime( true );
+        $response = curl_exec( $this->curl );
+        return $response;
+    }
+
+    /**
+     * Выводит в STDOUT отладочные сообщения на заданном уровне вывода отладочной информации
+     * @param string $message
+     * @param int Заданный уровень вывода отладочной информации
+     * @return void
+     */
+    private function debug( string $message, int $debugLevel )
+    {
+        if ( !( $this->debugLevel & $debugLevel ) ) {
+            return;
+        }
+
+        echo $message . PHP_EOL;
+    }
+
+    /**
      * Process results
      *
      * @param $data
@@ -185,7 +303,8 @@ class ApiClient implements ApiInterface
         if ( empty( $data->data ) ) {
             $data->data = new stdClass();
         }
-        if ( $data->http_code !== 200 ) {
+        if ( !in_array( $data->http_code, $this->successStatusCodes ) ) {
+        //if ($data->http_code !== 200) {
             $data->data->is_error = true;
             $data->data->http_code = $data->http_code;
             $data->data->headers = $data->headers;
@@ -340,9 +459,9 @@ class ApiClient implements ApiInterface
     /**
      * Change varible by user email
      *
-     * @param  int    $bookID
-     * @param  string $email  User email
-     * @param  array  $vars   User vars in [key=>value] format
+     * @param int $bookID
+     * @param string $email User email
+     * @param array $vars User vars in [key=>value] format
      * @return stdClass
      */
     public function updateEmailVariables( int $bookID, string $email, array $vars )
@@ -597,18 +716,18 @@ class ApiClient implements ApiInterface
     /**
      * Create new campaign
      *
-     * @param  $senderName
-     * @param  $senderEmail
-     * @param  $subject
-     * @param  $bodyOrTemplateId
-     * @param  $bookId
-     * @param  string   $name
-     * @param  array    $attachments
-     * @param  string   $type
-     * @param  bool     $useTemplateId
-     * @param  string   $sendDate
-     * @param  int|null $segmentId
-     * @param  array    $attachmentsBinary
+     * @param $senderName
+     * @param $senderEmail
+     * @param $subject
+     * @param $bodyOrTemplateId
+     * @param $bookId
+     * @param string $name
+     * @param array $attachments
+     * @param string $type
+     * @param bool $useTemplateId
+     * @param string $sendDate
+     * @param int|null $segmentId
+     * @param array $attachmentsBinary
      * @return mixed
      */
     public function createCampaign(
@@ -816,7 +935,7 @@ class ApiClient implements ApiInterface
     /**
      * Get global information about list of emails
      *
-     * @param  array $emails Emails list
+     * @param array $emails Emails list
      * @return stdClass
      */
     public function getEmailsGlobalInfo( $emails )
@@ -881,7 +1000,7 @@ class ApiClient implements ApiInterface
     /**
      * Add email to blacklist
      *
-     * @param $emails  - string with emails, separator - ,
+     * @param        $emails - string with emails, separator - ,
      * @param string $comment
      *
      * @return stdClass
@@ -947,8 +1066,8 @@ class ApiClient implements ApiInterface
     /**
      * SMTP: get list of emails
      *
-     * @param int    $limit
-     * @param int    $offset
+     * @param int $limit
+     * @param int $offset
      * @param string $fromDate
      * @param string $toDate
      * @param string $sender
@@ -1232,7 +1351,7 @@ class ApiClient implements ApiInterface
     /**
      * Get list of subscriptions for the website
      *
-     * @param $websiteID
+     * @param      $websiteID
      *
      * @param null $limit
      * @param null $offset
@@ -1305,7 +1424,7 @@ class ApiClient implements ApiInterface
     /**
      * Create new push campaign
      *
-     * @param $taskInfo
+     * @param       $taskInfo
      * @param array $additionalParams
      *
      * @return stdClass
@@ -1364,8 +1483,8 @@ class ApiClient implements ApiInterface
 
     /**
      * @Author Maksym Dzhym m.jim@sendpulse.com
-     * @param  $eventName
-     * @param  array $variables
+     * @param $eventName
+     * @param array $variables
      * @return stdClass
      */
     public function startEventAutomation360( $eventName, array $variables )
@@ -1385,8 +1504,8 @@ class ApiClient implements ApiInterface
     /**
      * Add phones to addressbook
      *
-     * @param  $bookID
-     * @param  array $phones
+     * @param $bookID
+     * @param array $phones
      * @return stdClass
      */
     public function addPhones( $bookID, array $phones )
@@ -1408,8 +1527,8 @@ class ApiClient implements ApiInterface
     /**
      * Add phones with variables to addressbook
      *
-     * @param  $bookID
-     * @param  array $phones
+     * @param $bookID
+     * @param array $phones
      * @return stdClass
      */
     public function addPhonesWithVariables( $bookID, array $phonesWithVariables )
@@ -1431,9 +1550,9 @@ class ApiClient implements ApiInterface
     /**
      * Update variables for phones
      *
-     * @param  $bookID
-     * @param  array $phones
-     * @param  array $variables
+     * @param $bookID
+     * @param array $phones
+     * @param array $variables
      * @return stdClass
      */
     public function updatePhoneVaribales( $bookID, array $phones, array $variables )
@@ -1456,8 +1575,8 @@ class ApiClient implements ApiInterface
     /**
      * Delete phones from book
      *
-     * @param  $bookID
-     * @param  array $phones
+     * @param $bookID
+     * @param array $phones
      * @return stdClass
      */
     public function deletePhones( $bookID, array $phones )
@@ -1479,8 +1598,8 @@ class ApiClient implements ApiInterface
     /**
      * get information about phone number
      *
-     * @param  $bookID
-     * @param  $phoneNumber
+     * @param $bookID
+     * @param $phoneNumber
      * @return stdClass
      */
     public function getPhoneInfo( $bookID, $phoneNumber )
@@ -1497,8 +1616,8 @@ class ApiClient implements ApiInterface
     /**
      * Add phones to blacklist
      *
-     * @param  $bookID
-     * @param  array $phones
+     * @param $bookID
+     * @param array $phones
      * @return stdClass
      */
     public function addPhonesToBlacklist( array $phones )
@@ -1515,7 +1634,7 @@ class ApiClient implements ApiInterface
     /**
      * Delete phones from blacklist
      *
-     * @param  array $phones
+     * @param array $phones
      * @return stdClass
      */
     public function removePhonesFromBlacklist( array $phones )
@@ -1544,9 +1663,9 @@ class ApiClient implements ApiInterface
     /**
      * Create sms campaign based on phones in book
      *
-     * @param  $bookID
-     * @param  array $params
-     * @param  array $additionalParams
+     * @param $bookID
+     * @param array $params
+     * @param array $additionalParams
      * @return stdClass
      */
     public function sendSmsByBook( $bookID, array $params, array $additionalParams = [] )
@@ -1573,9 +1692,9 @@ class ApiClient implements ApiInterface
     /**
      * Create sms campaign based on list
      *
-     * @param  $phones
-     * @param  array $params
-     * @param  array $additionalParams
+     * @param $phones
+     * @param array $params
+     * @param array $additionalParams
      * @return stdClass
      */
     public function sendSmsByList( array $phones, array $params, array $additionalParams )
@@ -1598,7 +1717,7 @@ class ApiClient implements ApiInterface
     /**
      * List sms campaigns
      *
-     * @param  $params
+     * @param $params
      * @return stdClass
      */
     public function listSmsCampaigns( array $params = null )
@@ -1611,7 +1730,7 @@ class ApiClient implements ApiInterface
     /**
      * Get info about sms campaign
      *
-     * @param  $campaignID
+     * @param $campaignID
      * @return stdClass
      */
     public function getSmsCampaignInfo( $campaignID )
@@ -1624,7 +1743,7 @@ class ApiClient implements ApiInterface
     /**
      * Cancel SMS campaign
      *
-     * @param  $campaignID
+     * @param $campaignID
      * @return stdClass
      */
     public function cancelSmsCampaign( $campaignID )
@@ -1637,8 +1756,8 @@ class ApiClient implements ApiInterface
     /**
      * Get SMS campaign cost based on book or simple list
      *
-     * @param  array      $params
-     * @param  array|null $additionalParams
+     * @param array $params
+     * @param array|null $additionalParams
      * @return stdClass
      */
     public function getSmsCampaignCost( array $params, array $additionalParams = null )
@@ -1659,7 +1778,7 @@ class ApiClient implements ApiInterface
     /**
      * Delete SMS campaign
      *
-     * @param  $campaignID
+     * @param $campaignID
      * @return stdClass
      */
     public function deleteSmsCampaign( $campaignID )
