@@ -212,17 +212,18 @@ class ApiClient implements ApiInterface
         $response = $this->throttleCurl();
         $deltaTime = sprintf( '%0.4f', microtime( true ) - $this->lastRequestTime );
 
-        $header_size = curl_getinfo( $this->curl, CURLINFO_HEADER_SIZE );
-        $headerCode = curl_getinfo( $this->curl, CURLINFO_HTTP_CODE );
+        $curlInfo = curl_getinfo( $this->curl );
+        $ip = $curlInfo['primary_ip'];
+        $header_size = $curlInfo['header_size'];
+        $headerCode = $curlInfo['http_code'];
         $responseBody = substr( $response, $header_size );
         $responseHeaders = substr( $response, 0, $header_size );
-        $ip = curl_getinfo( $this->curl, CURLINFO_PRIMARY_IP );
         $curlErrors = curl_error( $this->curl );
 
         curl_close( $this->curl );
 
         // Выводим заголовки и тело запроса
-        $this->debug( $this->curlInfo['request_header'] ?? 'REQUEST HEADERS ???', self::DEBUG_HEADERS );
+        $this->debug( $curlInfo['request_header'] ?? 'REQUEST HEADERS ???', self::DEBUG_HEADERS );
         if ( $method !== 'GET' ) {
             $this->debug( http_build_query( $data ) . PHP_EOL, self::DEBUG_CONTENT );
         }
